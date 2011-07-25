@@ -11,7 +11,7 @@ function YM2612() {
 	//this.load = function(s){};
 	//this.save = function(s){};
 }
-var config = {hq_fm:1, dac_bits:8, debug:0};
+var config = {hq_fm:0, dac_bits:8, debug:0};
 
 (function(){
 var YM = {};
@@ -1671,7 +1671,6 @@ YM2612.prototype.update = function(length) {	// [formerly LINT[],] int
 	if(config.debug)console.log("YM::update - refresh_fc_eg_chan*6...");
 	// refresh pg increments and eg rates if required
 	ym2612.CH[0].refresh_fc_eg();
-/*
 	ym2612.CH[1].refresh_fc_eg();
 	if (ym2612.OPN.ST.mode&0xc0) {
 		// 3slot mode (op order is 0,1,3,2)
@@ -1686,38 +1685,31 @@ YM2612.prototype.update = function(length) {	// [formerly LINT[],] int
 	ym2612.CH[3].refresh_fc_eg();
 	ym2612.CH[4].refresh_fc_eg();
 	ym2612.CH[5].refresh_fc_eg();
-*/
 	//console.log("YM::update - timer="+ym2612.OPN.eg.timer+", add="+ym2612.OPN.eg.timer_add);
 	if(config.debug)console.log("YM::update - buffering...");
 	// buffering
 	i = length; while (--i>-1) {
 		// clear outputs
 		YM.out_fm[0] = 0;
-/*
 		YM.out_fm[1] = 0;
 		YM.out_fm[2] = 0;
 		YM.out_fm[3] = 0;
 		YM.out_fm[4] = 0;
 		YM.out_fm[5] = 0;
-*/
 		// update ssg-eg output
 		ym2612.CH[0].update_ssg_eg();
-/*
 		ym2612.CH[1].update_ssg_eg();
 		ym2612.CH[2].update_ssg_eg();
 		ym2612.CH[3].update_ssg_eg();
 		ym2612.CH[4].update_ssg_eg();
 		ym2612.CH[5].update_ssg_eg();
-*/
 		ym2612.CH[0].calculate();
-/*
 		ym2612.CH[1].calculate();
 		ym2612.CH[2].calculate();
 		ym2612.CH[3].calculate();
 		ym2612.CH[4].calculate();
 		if (ym2612.dacen) YM.out_fm[5] = ym2612.dacout;
 		else ym2612.CH[5].calculate();
-*/
 		// advance lfo
 		ym2612.OPN.advance_lfo();
 		// advance env gen
@@ -1726,52 +1718,35 @@ YM2612.prototype.update = function(length) {	// [formerly LINT[],] int
 			//console.log("YM::update - timer="+ym2612.OPN.eg.timer);
 			ym2612.OPN.eg.timer -= ym2612.OPN.eg.timer_overflow;
 			++ym2612.OPN.eg.cnt;
-/*
-			// OLD
-			advance_eg_channel(ym2612.CH[0]);
-			advance_eg_channel(ym2612.CH[1]);
-			advance_eg_channel(ym2612.CH[2]);
-			advance_eg_channel(ym2612.CH[3]);
-			advance_eg_channel(ym2612.CH[4]);
-			advance_eg_channel(ym2612.CH[5]);
-*/
 			ym2612.CH[0].advance_eg_channel();
-/*
 			ym2612.CH[1].advance_eg_channel();
 			ym2612.CH[2].advance_eg_channel();
 			ym2612.CH[3].advance_eg_channel();
 			ym2612.CH[4].advance_eg_channel();
 			ym2612.CH[5].advance_eg_channel();
-*/
 		}
 		// 14-bit dac inputs (range is -8192;+8192)
 		//console.log("YM::update(buffer) - out[0]="+YM.out_fm[0]);
 		YM.out_fm[0] = YM.limit(YM.out_fm[0],-8192,8192);
-/*
 		YM.out_fm[1] = YM.limit(YM.out_fm[1],-8192,8192);
 		YM.out_fm[2] = YM.limit(YM.out_fm[2],-8192,8192);
 		YM.out_fm[3] = YM.limit(YM.out_fm[3],-8192,8192);
 		YM.out_fm[4] = YM.limit(YM.out_fm[4],-8192,8192);
 		YM.out_fm[5] = YM.limit(YM.out_fm[5],-8192,8192);
-*/
 		//console.log(YM.out_fm[0]+"&"+ym2612.OPN.pan[0]+"="+(YM.out_fm[0]&ym2612.OPN.pan[0]));
 		lt = (YM.out_fm[0]&ym2612.OPN.pan[0])+
-/*
 			(YM.out_fm[1]&ym2612.OPN.pan[2])+
 			(YM.out_fm[2]&ym2612.OPN.pan[4])+
 			(YM.out_fm[3]&ym2612.OPN.pan[6])+
 			(YM.out_fm[4]&ym2612.OPN.pan[8])+
 			(YM.out_fm[5]&ym2612.OPN.pan[10])+
-*/
 			0;
 		rt = (YM.out_fm[0]&ym2612.OPN.pan[1])+
-/*
 			(YM.out_fm[1]&ym2612.OPN.pan[3])+
 			(YM.out_fm[2]&ym2612.OPN.pan[5])+
 			(YM.out_fm[3]&ym2612.OPN.pan[7])+
 			(YM.out_fm[4]&ym2612.OPN.pan[9])+
 			(YM.out_fm[5]&ym2612.OPN.pan[11])+
-*/
 			0;
 		// buffering
 		buffer[0].push(lt);
