@@ -453,9 +453,9 @@ FM_SLOT.prototype.set_tl = function(v) {	// FM_SLOT*. int
 	this.tl = (v&0x7f)<<ENV.BITS-7;	// 7-bit tl
 	// recalculate eg output
 	if ((this.ssg&0x08)&&(this.ssgn^(this.ssg&0x04))&&this.state>EG.REL)
-		this.vol_out = parseInt(0x200-this.volume)&ENV.MAX_ATT_INDEX+this.tl;
+		this.vol_out = ((0x200-this.volume)|0)&ENV.MAX_ATT_INDEX+this.tl;
 	else
-		this.vol_out = parseInt(this.volume)+this.tl;
+		this.vol_out = ((this.volume)|0)+this.tl;
 }
 /* set attack rate & key scale  */
 FM_SLOT.prototype.set_ar_ksr = function(v) {	// FM_CH*, FM_SLOT*, int
@@ -498,11 +498,12 @@ FM_SLOT.prototype.set_sl_rr = function(v) {	// FM_SLOT*, int
 	this.eg.sel_rr = EG.rate_select[this.rate.rr+this.rate.ksr];
 }
 FM_SLOT.prototype.advance_eg_channel = function() {
+	var eg_cnt = ym2612.OPN.eg.cnt;
 	switch (this.state) {
 		case EG.ATT:	// attack phase
-			if (!(ym2612.OPN.eg.cnt&((1<<this.eg.sh_ar)-1))) {
+			if (!(eg_cnt&((1<<this.eg.sh_ar)-1))) {
 				// update attenuation level
-				this.volume += (~this.volume*EG.inc[this.eg.sel_ar+((ym2612.OPN.eg.cnt>>this.eg.sh_ar)&7)])>>4;
+				this.volume += (~this.volume*EG.inc[this.eg.sel_ar+((eg_cnt>>this.eg.sh_ar)&7)])>>4;
 				// check phase transition
 				if (this.volume<=ENV.MIN_ATT_INDEX) {
 					this.volume = ENV.MIN_ATT_INDEX;
@@ -510,67 +511,64 @@ FM_SLOT.prototype.advance_eg_channel = function() {
 				}
 				// recalculate eg output
 				if ((this.ssg&0x08)&&(this.ssgn^(this.ssg&0x04)))
-					this.vol_out = (parseInt(0x200-this.volume)&ENV.MAX_ATT_INDEX)+this.tl;
+					this.vol_out = (((0x200-this.volume)|0)&ENV.MAX_ATT_INDEX)+this.tl;
 				else
-					this.vol_out = parseInt(this.volume)+this.tl;
+					this.vol_out = ((this.volume)|0)+this.tl;
 				//throw new Error("state:atk - vol_out="+this.vol_out);
 			}
 			break;
 		case EG.DEC:	// decay phase
-			//throw new Error("state:dec");
-			if (!(ym2612.OPN.eg.cnt&((1<<this.eg.sh_d1r)-1))) {
+			if (!(eg_cnt&((1<<this.eg.sh_d1r)-1))) {
 				if (this.ssg&0x08) {	// ssg-eg type
 					// update attenuation level
 					if (this.volume<0x200) {
-						this.volume += 4*EG.inc[this.eg.sel_d1r+((ym2612.OPN.eg.cnt>>this.eg.sh_d1r)&7)];
+						this.volume += 4*EG.inc[this.eg.sel_d1r+((eg_cnt>>this.eg.sh_d1r)&7)];
 						// recalculate eg output
 						if (this.ssgn^(this.ssg&0x04))
-							this.vol_out = (parseInt(0x200-this.volume)&ENV.MAX_ATT_INDEX)+this.tl;
+							this.vol_out = (((0x200-this.volume)|0)&ENV.MAX_ATT_INDEX)+this.tl;
 						else
-							this.vol_out = parseInt(this.volume)+this.tl;
+							this.vol_out = ((this.volume)|0)+this.tl;
 					}
 				}
 				else {
 					// update attenuation level
-					this.volume += EG.inc[this.eg.sel_d1r+((ym2612.OPN.eg.cnt>>this.eg.sh_d1r)&7)];
+					this.volume += EG.inc[this.eg.sel_d1r+((eg_cnt>>this.eg.sh_d1r)&7)];
 					// recalculate eg output
-					this.vol_out = parseInt(this.volume)+this.tl;
+					this.vol_out = ((this.volume)|0)+this.tl;
 				}
 				// check phase transition
 				if (this.volume>=this.sl) this.state = EG.SUS;
 			}
 			break;
 		case EG.SUS:	// sustain phase
-			//throw new Error("state:sus");
-			if (!(ym2612.OPN.eg.cnt&((1<<this.eg.sh_d2r)-1))) {
+			if (!(eg_cnt&((1<<this.eg.sh_d2r)-1))) {
 				if (this.ssg&0x08) {	// ssg-eg type
 					// update attenuation level
 					if (this.volume<0x200) {
-						this.volume += 4*EG.inc[this.eg.sel_d2r+((ym2612.OPN.eg.cnt>>this.eg.sh_d2r)&7)];
+						this.volume += 4*EG.inc[this.eg.sel_d2r+((eg_cnt>>this.eg.sh_d2r)&7)];
 						// recalculate eg output
 						if (this.ssgn^(this.ssg&0x04))
-							this.vol_out = (parseInt(0x200-this.volume)&ENV.MAX_ATT_INDEX)+this.tl;
+							this.vol_out = (((0x200-this.volume)|0)&ENV.MAX_ATT_INDEX)+this.tl;
 						else
-							this.vol_out = parseInt(this.volume)+this.tl;
+							this.vol_out = ((this.volume)|0)+this.tl;
 					}
 				}
 				else {
 					// update attenuation level
-					this.volume += EG.inc[this.eg.sel_d2r+((ym2612.OPN.eg.cnt>>this.eg.sh_d2r)&7)];
+					this.volume += EG.inc[this.eg.sel_d2r+((eg_cnt>>this.eg.sh_d2r)&7)];
 					// check phase transition
 					if (this.volume>=ENV.MAX_ATT_INDEX) this.volume = ENV.MAX_ATT_INDEX;	// do not change SLOT.state
 					// recalculate eg output
-					this.vol_out = parseInt(this.volume)+this.tl;
+					this.vol_out = ((this.volume)|0)+this.tl;
 				}
 			}
 			break;
 		case EG.REL:	// release phase
-			//throw new Error("state:rel");
-			if (!(ym2612.OPN.eg.cnt&((1<<this.eg.sh_rr)-1))) {
+			if (!(eg_cnt&((1<<this.eg.sh_rr)-1))) {
 				if (this.ssg&0x08) {	// ssg-eg type
 					// update attenuation level
 					if (this.volume<0x200)
-						this.volume += 4*EG.inc[this.eg.sel_rr+((ym2612.OPN.eg.cnt>>this.eg.sh_rr)&7)];
+						this.volume += 4*EG.inc[this.eg.sel_rr+((eg_cnt>>this.eg.sh_rr)&7)];
 					// check phase transition
 					if (this.volume>=0x200) {
 						this.volume = ENV.MAX_ATT_INDEX;
@@ -579,7 +577,7 @@ FM_SLOT.prototype.advance_eg_channel = function() {
 				}
 				else {
 					// update attenuation level
-					this.volume += EG.inc[this.eg.sel_rr+((ym2612.OPN.eg.cnt>>this.eg.sh_rr)&7)];
+					this.volume += EG.inc[this.eg.sel_rr+((eg_cnt>>this.eg.sh_rr)&7)];
 					// check phase transition
 					if (this.volume>=ENV.MAX_ATT_INDEX) {
 						this.volume = ENV.MAX_ATT_INDEX;
@@ -587,7 +585,7 @@ FM_SLOT.prototype.advance_eg_channel = function() {
 					}
 				}
 				// recalculate eg output
-				this.vol_out = parseInt(this.volume)+this.tl;
+				this.vol_out = ((this.volume)|0)+this.tl;
 			}
 			break;
 	}
@@ -619,22 +617,21 @@ FM_SLOT.prototype.update_ssg_eg = function() {
 		}
 		// recalculate eg output
 		if (this.ssgn^(this.ssg&0x04))
-			this.vol_out = (parseInt(0x200-this.volume)&ENV.MAX_ATT_INDEX)+this.tl;
+			this.vol_out = (((0x200-this.volume)|0)&ENV.MAX_ATT_INDEX)+this.tl;
 		else
-			this.vol_out = parseInt(this.volume)+this.tl;
+			this.vol_out = ((this.volume)|0)+this.tl;
 	}
 };
 FM_SLOT.prototype.update_phase_lfo = function(pms, block_fnum) {	// FM_SLOT*, INT32, UINT32 block_fnum
-	var fnum_lfo = ((block_fnum&0x7f0)>>4)*32*8;	// UINT32
-	var lfo_fn_table_index_offset = LFO.pm_table[fnum_lfo+pms+ym2612.OPN.lfo.PM];	// INT32
+	var lfo_fn_table_index_offset = LFO.pm_table[(((block_fnum&0x7f0)>>4)<<8)+pms+ym2612.OPN.lfo.PM];	// INT32
 	if (lfo_fn_table_index_offset) {	// lfo phase modulation active
 		block_fnum = block_fnum*2+lfo_fn_table_index_offset;
-		var blk = (block_fnum&0x7000)>>12,	// BYTE
-			fn = block_num&0xfff;	// UINT32
+		var blk = (block_fnum&0x7000)>>12;	// BYTE
+		block_fnum = block_num&0xfff;	// UINT32
 		// keyscale code
-		var kc = (blk<<2)|OPN.fktable[fn>>8];	// int
+		var kc = (blk<<2)|OPN.fktable[block_fnum>>8];	// int
 		// (frequency) phase increment counter
-		var fc = (ym2612.OPN.fn.table[fn]>>(7-blk))+this.DT[kc];	// int
+		var fc = (ym2612.OPN.fn.table[block_fnum]>>(7-blk))+this.DT[kc];	// int
 		// (frequency) phase overflow
 		if (fc<0) fc += ym2612.OPN.fn.max;
 		this.phase += (fc*this.rate.mul)>>1;	// update phase
@@ -645,32 +642,27 @@ FM_SLOT.prototype.update_phase_lfo = function(pms, block_fnum) {	// FM_SLOT*, IN
 };
 /* update phase increment and envelope generator */
 FM_SLOT.prototype.refresh_fc_eg = function(fc, kc) {	// FM_SLOT*, int, int
-	//console.log("YM2612::refresh_fc_eg_slot - fc="+fc+" kc="+kc+" mul="+this.rate.mul+" incr="+this.Incr);
-	var ksr = kc>>this.KSR;	// int
-	fc += this.DT[kc];
-	// (frequency) phase overflow
-	//console.log("YM2612::refresh_fc_eg_slot - DT="+this.DT[kc]);
-	if (fc<0) fc += ym2612.OPN.fn.max;
-	// (frquency) phase increment counter
-	this.Incr = (fc*this.rate.mul)>>1;
-	//console.log("YM2612::refresh_fc_eg_slot - fc="+fc+" kc="+kc+" mul="+this.rate.mul+" incr="+this.Incr);
-	if (this.rate.ksr!==ksr) {
-		this.rate.ksr = ksr;
+	fc += this.DT[kc];	// add detune value
+	if (fc<0) fc += ym2612.OPN.fn.max;	// (frequency) phase overflow
+	this.Incr = (fc*this.rate.mul)>>1;	// (frequency) phase increment counter
+	kc = kc>>this.KSR;	// ksr
+	if (this.rate.ksr!==kc) {
+		this.rate.ksr = kc;
 		// recalculate env gen rates
-		if ((this.rate.ar+this.rate.ksr)<(32+62)) {
-			this.eg.sh_ar = EG.rate_shift[this.rate.ar+this.rate.ksr];
-			this.eg.sel_ar = EG.rate_select[this.rate.ar+this.rate.ksr];
+		if ((this.rate.ar+kc)<(32+62)) {
+			this.eg.sh_ar = EG.rate_shift[this.rate.ar+kc];
+			this.eg.sel_ar = EG.rate_select[this.rate.ar+kc];
 		}
 		else {	// attack phase is blocked
 			this.eg.sh_ar = 0;
 			this.eg.sel_ar = 18*EG.RATE_STEPS;
 		}
-		this.eg.sh_d1r = EG.rate_shift[this.rate.d1r+this.rate.ksr];
-		this.eg.sel_d1r = EG.rate_select[this.rate.d1r+this.rate.ksr];
-		this.eg.sh_d2r = EG.rate_shift[this.rate.d2r+this.rate.ksr];
-		this.eg.sel_d2r = EG.rate_select[this.rate.d2r+this.rate.ksr];
-		this.eg.sh_rr = EG.rate_shift[this.rate.rr+this.rate.ksr];
-		this.eg.sel_rr = EG.rate_select[this.rate.rr+this.rate.ksr];
+		this.eg.sh_d1r = EG.rate_shift[this.rate.d1r+kc];
+		this.eg.sel_d1r = EG.rate_select[this.rate.d1r+kc];
+		this.eg.sh_d2r = EG.rate_shift[this.rate.d2r+kc];
+		this.eg.sel_d2r = EG.rate_select[this.rate.d2r+kc];
+		this.eg.sh_rr = EG.rate_shift[this.rate.rr+kc];
+		this.eg.sel_rr = EG.rate_select[this.rate.rr+kc];
 	}
 };
 FM_SLOT.prototype.reset = function() {	// FM_CH*[]
@@ -694,9 +686,9 @@ FM_SLOT.prototype.keyOn = function() {	// FM_CH*, int
 		}
 		// recalculate eg output
 		if ((this.ssg&0x08)&&this.ssgn^(this.ssg&0x04))
-			this.vol_out = parseInt((0x200-this.volume)&ENV.MAX_ATT_INDEX)+this.tl;
+			this.vol_out = (((0x200-this.volume)|0)&ENV.MAX_ATT_INDEX)+this.tl;
 		else
-			this.vol_out = parseInt(this.volume+this.tl);
+			this.vol_out = ((this.volume+this.tl)|0);
 	}
 	this.key = 1;
 };
@@ -714,7 +706,7 @@ FM_SLOT.prototype.keyOff = function(s) {	// FM_CH*, int
 					this.state = EG.OFF;
 				}
 				// recalculate eg output
-				this.vol_out = parseInt(this.volume+this.tl);
+				this.vol_out = ((this.volume+this.tl)|0);
 			}
 		}
 	}
@@ -791,16 +783,15 @@ FM_CH.prototype.update_ssg_eg = function() {	// formerly FM_SLOT*
 };
 FM_CH.prototype.update_phase_lfo = function() {	// FM_CH*
 	var block_fnum = this.block_fnum;	// UINT32
-	var fnum_lfo = ((block_fnum&0x7f0)>>4)*32*8;	// UINT32
-	var lfo_fn_table_index_offset = LFO.pm_table[fnum_lfo+this.pms+ym2612.OPN.lfo.PM];
+	var lfo_fn_table_index_offset = LFO.pm_table[(((block_fnum&0x7f0)>>4)<<8)+this.pms+ym2612.OPN.lfo.PM];
 	if (lfo_fn_table_index_offset) {	// lfo phase modulation active
 		block_fnum = block_fnum*2+lfo_fn_table_index_offset;
 		var blk = (block_fnum&0x7000)>>12;	// UINT8
-		var fn = block_fnum&0xfff;
+		block_fnum = block_fnum&0xfff;
 		// keyscale code
-		var kc = (blk<<2)|OPN.fktable[fn>>8];	// int
+		var kc = (blk<<2)|OPN.fktable[block_fnum>>8];	// int
 		// (frequency) phase increment counter
-		var fc = ym2612.OPN.fn.table[fn]>>(7-blk);	// int
+		var fc = ym2612.OPN.fn.table[block_fnum]>>(7-blk);	// int
 		// (frequency) phase overflow
 		var finc;
 		finc = fc+this.SLOT[_SLOT[0]].DT[kc];	// int
@@ -826,20 +817,13 @@ FM_CH.prototype.update_phase_lfo = function() {	// FM_CH*
 };
 
 function op_calc(phase, env, pm) {	// UINT32, UINT, SINT
-	var p, nm = ~YM.FREQ_MASK;	// UINT32
-	var pn = (phase&nm)+(pm<<15), ps = (pn>>YM.FREQ_SH)&YM.SIN_MASK,
-		es = env<<3;
-	p = es+YM.sin[ps];
+	var p = (env<<3)+YM.sin[(((phase&(~YM.FREQ_MASK))+(pm<<15))>>YM.FREQ_SH)&YM.SIN_MASK];
 	//console.log("YM::op_calc ("+phase+","+env+","+pm+")="+p+"/"+TL.TAB_LEN+(p<TL.TAB_LEN?"="+TL.tab[p]:''));
 	if (p>=TL.TAB_LEN) return 0;
 	return TL.tab[p];
 }
 function op_calc1(phase, env, pm) {	// UINT32, UINT, SINT
-	var p, nm = ~YM.FREQ_MASK;	// UINT32
-	var pn = (phase&nm)+pm, ps = (pn>>YM.FREQ_SH)&YM.SIN_MASK,
-		es = env<<3;
-	//console.log(es+"+"+YM.sin[ps]+" aka SIN("+phase+"&"+(nm)+"="+(pn)+",>>"+YM.FREQ_SH+"="+((pn>>YM.FREQ_SH)&YM.SIN_MASK)+"==="+ps+")");
-	p = es+YM.sin[ps];
+	var p = (env<<3)+YM.sin[(((phase&(~YM.FREQ_MASK))+pm)>>YM.FREQ_SH)&YM.SIN_MASK];
 	//console.log("YM::op_calc1 ("+phase+","+env+","+pm+")="+p+"/"+TL.TAB_LEN+(p<TL.TAB_LEN?"="+TL.tab[p]:''));
 	if (p>=TL.TAB_LEN) return 0;
 	return TL.tab[p];
@@ -1207,9 +1191,9 @@ function FM_KEYON_CSM(CH,s) {	// FM_CH*, int
 		}
 		// recalculate eg output
 		if ((CH.SLOT[s].ssg&0x08)&&CH.SLOT[s].ssgn^(CH.SLOT[s].ssg&0x04))
-			CH.SLOT[s].vol_out = parseInt((0x200-CH.SLOT[s].volume)&ENV.MAX_ATT_INDEX)+CH.SLOT[s].tl;
+			CH.SLOT[s].vol_out = (((0x200-CH.SLOT[s].volume)|0)&ENV.MAX_ATT_INDEX)+CH.SLOT[s].tl;
 		else
-			CH.SLOT[s].vol_out = parseInt(CH.SLOT[s].volume+CH.SLOT[s].tl);
+			CH.SLOT[s].vol_out = ((CH.SLOT[s].volume+CH.SLOT[s].tl)|0);
 	}
 }
 
@@ -1228,7 +1212,7 @@ function FM_KEYOFF_CSM(CH,s) {	// FM_CH*, int
 					CH.SLOT[s].state = EG.OFF;
 				}
 				// recalculate eg output
-				CH.SLOT[s].vol_out = parseInt(SLOT.volume+SLOT.tl);
+				CH.SLOT[s].vol_out = ((SLOT.volume+SLOT.tl)|0);
 			}
 		}
 	}
@@ -1339,7 +1323,7 @@ OPN.WriteMode = function(r,v){	// int, int
 			else ym2612.OPN.lfo.timer_overflow = 0;
 			break;
 		case 0x24:	// timer a high 8
-			ym2612.OPN.ST.TA = (ym2612.OPN.ST.TA&0x03)|(parseInt(v)<<2);
+			ym2612.OPN.ST.TA = (ym2612.OPN.ST.TA&0x03)|(((v)|0)<<2);
 			ym2612.OPN.ST.TAL = (1024-ym2612.OPN.ST.TA)<<YM.TIMER_SH;
 			break;
 		case 0x25:	// timer a low 2
@@ -1401,9 +1385,9 @@ OPN.WriteReg = function(r,v){	// int, int
 			// recalculate eg output
 			if (ym2612.CH[c].SLOT[s].state>EG.REL) {
 				if ((ym2612.CH[c].SLOT[s].ssg&0x08)&&(ym2612.CH[c].SLOT[s].ssgn^(ym2612.CH[c].SLOT[s].ssg&0x04)))
-					ym2612.CH[c].SLOT[s].vol_out = (parseInt(0x200-ym2612.CH[c].SLOT[s].volume)&ENV.MAX_ATT_INDEX)+ym2612.CH[c].SLOT[s].tl;
+					ym2612.CH[c].SLOT[s].vol_out = (((0x200-ym2612.CH[c].SLOT[s].volume)|0)&ENV.MAX_ATT_INDEX)+ym2612.CH[c].SLOT[s].tl;
 				else
-					ym2612.CH[c].SLOT[s].vol_out = parseInt(ym2612.CH[c].SLOT[s].volume)+ym2612.CH[c].SLOT[s].tl;
+					ym2612.CH[c].SLOT[s].vol_out = ((ym2612.CH[c].SLOT[s].volume)|0)+ym2612.CH[c].SLOT[s].tl;
 			}
 			break;
 		case 0xa0:
@@ -1412,7 +1396,7 @@ OPN.WriteReg = function(r,v){	// int, int
 			var fn, blk;
 			switch (s) {
 				case 0:	// 0xA0-0xA2: FNUM1
-					fn = ((parseInt(ym2612.OPN.ST.fn_h)&7)<<8)+v;
+					fn = ((((ym2612.OPN.ST.fn_h)|0)&7)<<8)+v;
 					blk = ym2612.OPN.ST.fn_h>>3;
 					// keyscale code
 					ym2612.CH[c].kcode = (blk<<2)|OPN.fktable[fn>>7];
@@ -1427,7 +1411,7 @@ OPN.WriteReg = function(r,v){	// int, int
 					break;
 				case 2:	// 0xA8-0xAA: 3CH FNUM1
 					if (r<0x100) {
-						fn = ((parseInt(ym2612.OPN.SL3.fn_h)&7)<<8)+v;
+						fn = ((((ym2612.OPN.SL3.fn_h)|0)&7)<<8)+v;
 						blk = ym2612.OPN.SL3.fn_h>>3;
 						// keyscale code
 						ym2612.OPN.SL3.kcode[c] = (blk<<2)|OPN.fktable[fn>>7];
@@ -1470,7 +1454,7 @@ function init_timetables(freqbase) {	// double
 		i = -1; while (++i<=31) {
 			rate = EG.dt_tab[d*32+i]*freqbase*(1<<(YM.FREQ_SH-10));
 			//console.log("YM::init_timetables - rate["+d+","+i+"]="+rate);
-			ym2612.OPN.ST.dt_tab[d][i] = parseInt(rate);
+			ym2612.OPN.ST.dt_tab[d][i] = ((rate)|0);
 			ym2612.OPN.ST.dt_tab[d+4][i] = -ym2612.OPN.ST.dt_tab[d][i];
 		}
 	}
@@ -1478,11 +1462,11 @@ function init_timetables(freqbase) {	// double
 	// but LFO works with one more bit of a precision so we really need 4096 elements
 	// calculate fnumber -> increment counter table
 	i = -1; while (++i<4096) {
-		ym2612.OPN.fn.table[i] = parseInt(i*32*freqbase*(1<<(YM.FREQ_SH-10)));
+		ym2612.OPN.fn.table[i] = ((i*32*freqbase*(1<<(YM.FREQ_SH-10)|0)));
 		//console.log("YM::init_timetables - fn["+i+"]="+ym2612.OPN.fn.table[i]);
 	}
 	// maximal frequency is required for Phase overflow calculation, register size is 17 bits
-	ym2612.OPN.fn.max = parseInt(0x20000*freqbase*(1<<(YM.FREQ_SH-10)));
+	ym2612.OPN.fn.max = ((0x20000*freqbase*(1<<(YM.FREQ_SH-10)|0)));
 	//console.log("YM::init_timetables - fn_max="+ym2612.OPN.fn.max);
 }
 
@@ -1496,13 +1480,13 @@ OPN.SetPres = function(pres){	// int
 	if (config.hq_fm) freqbase = 1.0;
 	//console.log("OPN::SetPrescaler - base mult="+freqbase);
 	// eg is updated every 3 samples
-	ym2612.OPN.eg.timer_add = parseInt((1<<YM.EG_SH)*freqbase);
+	ym2612.OPN.eg.timer_add = (((1<<YM.EG_SH)|0)*freqbase);
 	ym2612.OPN.eg.timer_overflow = 3*(1<<YM.EG_SH);
 	//console.log("OPN::SetPrescaler - eg_timer_add="+ym2612.OPN.eg.timer_add+", eg_timer_overflow="+ym2612.OPN.eg.timer_overflow);
 	// lfo timer increment (every sample)
-	ym2612.OPN.lfo.timer_add = parseInt((1<<YM.LFO_SH)*freqbase);
+	ym2612.OPN.lfo.timer_add = (((1<<YM.LFO_SH)|0)*freqbase);
 	// timers increment (every sample
-	ym2612.OPN.ST.TimerBase = parseInt((1<<YM.TIMER_SH)*freqbase);
+	ym2612.OPN.ST.TimerBase = (((1<<YM.TIMER_SH)|0)*freqbase);
 	// make timetables
 	init_timetables(freqbase);
 };
@@ -1519,7 +1503,7 @@ function init_tables() {
 	var tmp_trl = 2*TL.RES_LEN, tmp_irl, tmp_2x;
 	x = -1; while (++x<TL.RES_LEN) {
 		m = Math.floor(tmp_sh/Math.pow(2,(x+1)*tmp_es8));
-		n = parseInt(m)>>4;	// 12 bits here
+		n = ((m)|0)>>4;	// 12 bits here
 		if (n&1) n = (n>>1)+1;
 		else n = n>>1;
 		n <<= 2;	// 13 bits here (as in real chip)
@@ -1545,7 +1529,7 @@ function init_tables() {
 		if (m>0.0) o = Math.log(1.0/m)*tmp_8l2;
 		else o = Math.log(-1.0/m)*tmp_8l2;
 		o = o/tmp_es;
-		n = parseInt(2.0*o);
+		n = ((2.0*o)|0);
 		if (n&1) n = (n>>1)+1;
 		else n = n>>1;
 		// 13-bits (8.5) value is formatted for above 'power' table
@@ -1593,6 +1577,7 @@ YM2612.prototype.reset = function() {
 	var i;
 	ym2612.OPN.eg.timer = 0;
 	ym2612.OPN.eg.cnt = 0;
+	ym2612.OPN.lfo.timer_overflow = 0;
 	ym2612.OPN.lfo.timer = 0;
 	ym2612.OPN.lfo.cnt = 0;
 	ym2612.OPN.lfo.AM = 0;
@@ -1602,11 +1587,18 @@ YM2612.prototype.reset = function() {
 	ym2612.OPN.SL3.key_csm = 0;
 	ym2612.dacen = 0;
 	ym2612.dacout = 0;
+/*
 	OPN.WriteMode(0x27,0x30);
 	OPN.WriteMode(0x26,0x30);
 	OPN.WriteMode(0x25,0x30);
 	OPN.WriteMode(0x24,0x30);
 	OPN.WriteMode(0x22,0x30);
+*/
+	set_timers(0x30);
+	ym2612.OPN.ST.TB = 0;
+	ym2612.OPN.ST.TBL = 256<<(YM.TIMER_SH+4);
+	ym2612.OPN.ST.TA = 0;
+	ym2612.OPN.ST.TAL = 1024<<YM.TIMER_SH;
 	i = ym2612.CH.length; while (--i>-1) ym2612.CH[i].reset();
 	i = 0xb6+1; while (--i>=0xb4) {
 		OPN.WriteReg(i,0xc0);
@@ -1645,7 +1637,7 @@ YM2612.prototype.write = function(a,v) {
 		case 0x20:	// 0x20-0x2f mode
 			switch (addr) {
 				case 0x2a:	// dac data
-					ym2612.dacout = (parseInt(v)&0x80)<<6;
+					ym2612.dacout = (((v)|0)&0x80)<<6;
 					break;
 				case 0x2b:	// dac sel
 					ym2612.dacen = v&0x80;
@@ -1672,7 +1664,8 @@ YM2612.prototype.update = function(length) {	// [formerly LINT[],] int
 	// refresh pg increments and eg rates if required
 	ym2612.CH[0].refresh_fc_eg();
 	ym2612.CH[1].refresh_fc_eg();
-	if (ym2612.OPN.ST.mode&0xc0) {
+	if (!(ym2612.OPN.ST.mode&0xc0)) ym2612.CH[2].refresh_fc_eg();
+	else {
 		// 3slot mode (op order is 0,1,3,2)
 		if (ym2612.CH[2].SLOT[_SLOT[0]].Incr===-1) {
 			ym2612.CH[2].SLOT[_SLOT[0]].refresh_fc_eg(ym2612.OPN.SL3.fc[1], ym2612.OPN.SL3.kcode[1]);
@@ -1681,7 +1674,6 @@ YM2612.prototype.update = function(length) {	// [formerly LINT[],] int
 			ym2612.CH[2].SLOT[_SLOT[3]].refresh_fc_eg(ym2612.CH[2].fc, ym2612.CH[2].kcode);
 		}
 	}
-	else ym2612.CH[2].refresh_fc_eg();
 	ym2612.CH[3].refresh_fc_eg();
 	ym2612.CH[4].refresh_fc_eg();
 	ym2612.CH[5].refresh_fc_eg();
@@ -1703,13 +1695,14 @@ YM2612.prototype.update = function(length) {	// [formerly LINT[],] int
 		ym2612.CH[3].update_ssg_eg();
 		ym2612.CH[4].update_ssg_eg();
 		ym2612.CH[5].update_ssg_eg();
+		// calculate fm
 		ym2612.CH[0].calculate();
 		ym2612.CH[1].calculate();
 		ym2612.CH[2].calculate();
 		ym2612.CH[3].calculate();
 		ym2612.CH[4].calculate();
-		if (ym2612.dacen) YM.out_fm[5] = ym2612.dacout;
-		else ym2612.CH[5].calculate();
+		if (!ym2612.dacen) ym2612.CH[5].calculate();
+		else YM.out_fm[5] = ym2612.dacout;
 		// advance lfo
 		ym2612.OPN.advance_lfo();
 		// advance env gen
@@ -1728,25 +1721,31 @@ YM2612.prototype.update = function(length) {	// [formerly LINT[],] int
 		// 14-bit dac inputs (range is -8192;+8192)
 		//console.log("YM::update(buffer) - out[0]="+YM.out_fm[0]);
 		YM.out_fm[0] = YM.limit(YM.out_fm[0],-8192,8192);
+/*
 		YM.out_fm[1] = YM.limit(YM.out_fm[1],-8192,8192);
 		YM.out_fm[2] = YM.limit(YM.out_fm[2],-8192,8192);
 		YM.out_fm[3] = YM.limit(YM.out_fm[3],-8192,8192);
 		YM.out_fm[4] = YM.limit(YM.out_fm[4],-8192,8192);
 		YM.out_fm[5] = YM.limit(YM.out_fm[5],-8192,8192);
+*/
 		//console.log(YM.out_fm[0]+"&"+ym2612.OPN.pan[0]+"="+(YM.out_fm[0]&ym2612.OPN.pan[0]));
 		lt = (YM.out_fm[0]&ym2612.OPN.pan[0])+
+/*
 			(YM.out_fm[1]&ym2612.OPN.pan[2])+
 			(YM.out_fm[2]&ym2612.OPN.pan[4])+
 			(YM.out_fm[3]&ym2612.OPN.pan[6])+
 			(YM.out_fm[4]&ym2612.OPN.pan[8])+
 			(YM.out_fm[5]&ym2612.OPN.pan[10])+
+*/
 			0;
 		rt = (YM.out_fm[0]&ym2612.OPN.pan[1])+
+/*
 			(YM.out_fm[1]&ym2612.OPN.pan[3])+
 			(YM.out_fm[2]&ym2612.OPN.pan[5])+
 			(YM.out_fm[3]&ym2612.OPN.pan[7])+
 			(YM.out_fm[4]&ym2612.OPN.pan[9])+
 			(YM.out_fm[5]&ym2612.OPN.pan[11])+
+*/
 			0;
 		// buffering
 		buffer[0].push(lt);
