@@ -1721,31 +1721,25 @@ YM2612.prototype.update = function(length) {	// [formerly LINT[],] int
 		// 14-bit dac inputs (range is -8192;+8192)
 		//console.log("YM::update(buffer) - out[0]="+YM.out_fm[0]);
 		YM.out_fm[0] = YM.limit(YM.out_fm[0],-8192,8192);
-/*
 		YM.out_fm[1] = YM.limit(YM.out_fm[1],-8192,8192);
 		YM.out_fm[2] = YM.limit(YM.out_fm[2],-8192,8192);
 		YM.out_fm[3] = YM.limit(YM.out_fm[3],-8192,8192);
 		YM.out_fm[4] = YM.limit(YM.out_fm[4],-8192,8192);
 		YM.out_fm[5] = YM.limit(YM.out_fm[5],-8192,8192);
-*/
 		//console.log(YM.out_fm[0]+"&"+ym2612.OPN.pan[0]+"="+(YM.out_fm[0]&ym2612.OPN.pan[0]));
 		lt = (YM.out_fm[0]&ym2612.OPN.pan[0])+
-/*
 			(YM.out_fm[1]&ym2612.OPN.pan[2])+
 			(YM.out_fm[2]&ym2612.OPN.pan[4])+
 			(YM.out_fm[3]&ym2612.OPN.pan[6])+
 			(YM.out_fm[4]&ym2612.OPN.pan[8])+
 			(YM.out_fm[5]&ym2612.OPN.pan[10])+
-*/
 			0;
 		rt = (YM.out_fm[0]&ym2612.OPN.pan[1])+
-/*
 			(YM.out_fm[1]&ym2612.OPN.pan[3])+
 			(YM.out_fm[2]&ym2612.OPN.pan[5])+
 			(YM.out_fm[3]&ym2612.OPN.pan[7])+
 			(YM.out_fm[4]&ym2612.OPN.pan[9])+
 			(YM.out_fm[5]&ym2612.OPN.pan[11])+
-*/
 			0;
 		// buffering
 		buffer[0].push(lt);
