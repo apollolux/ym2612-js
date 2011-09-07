@@ -1204,7 +1204,7 @@ function FM_KEYON_CSM(CH,s) {	// FM_CH*, int
 		// reset ssg-eg inversion flag
 		CH.SLOT[s].ssgn = 0;
 		if ((CH.SLOT[s].rate.ar+CH.SLOT[s].rate.ksr)<94)
-			CH.SLOT[s].state = CH.SLOT[s].volum<=_ENV.MIN_ATT_INDEX?(CH.SLOT[s].sl===_ENV.MIN_ATT_INDEX?_EG.SUS:_EG.DEC):_EG.ATT;
+			CH.SLOT[s].state = CH.SLOT[s].volume<=_ENV.MIN_ATT_INDEX?(CH.SLOT[s].sl===_ENV.MIN_ATT_INDEX?_EG.SUS:_EG.DEC):_EG.ATT;
 		else {
 			CH.SLOT[s].volume = _ENV.MIN_ATT_INDEX;	// force attenuation level to 0
 			CH.SLOT[s].state = CH.SLOT[s].sl===_ENV.MIN_ATT_INDEX?_EG.SUS:_EG.DEC;	// directly switch to decay or sustain
