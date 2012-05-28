@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>ym2612.js by apollolux</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>ym2612.js</h1>
+        <p>A YM2612 core written in JavaScript</p>
+        <p class="view"><a href="https://github.com/apollolux/ym2612-js">View the Project on GitHub <small>apollolux/ym2612-js</small></a></p>
+        <ul>
+          <li><a href="https://github.com/apollolux/ym2612-js/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/apollolux/ym2612-js/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/apollolux/ym2612-js">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h3>Some Retro FM Synthesis Action</h3>
+
+<p>This is a basic emulation of the Yamaha YM2612 synthesis chip written entirely in JavaScript. The intention is primarily to mockup interaction of a YM2612 core with an implementation of Steinberg's <em>VST</em> audio toolkit. This core is based entirely on the open-source C-based YM2612 core found in the Wii port of the Genesis Plus emulator.</p>
+
+<ul>
+<li>Genesis Plus can be found at <a href="http://code.google.com/p/genplus-gx">http://code.google.com/p/genplus-gx</a>
+</li>
+<li>VST can be found at <a href="http://www.steinberg.net/en/company/developer.html">http://www.steinberg.net/en/company/developer.html</a>
+</li>
+<li>Basic JavaScript implementation of VST by myself (as proof-of-concept for my mockup purposes) soon to follow!</li>
+</ul><h3>Get It</h3>
+
+<p>Download either the minified ym2612.min.js or the uncompressed ym2612.js file and put it in a location accessible to your JavaScript-based application.</p>
+
+<h3>Use It</h3>
+
+<p>Declare a YM2612 object, then initialize its internal clock speed (NTSC used 7670445) and your app's sample rate. Start passing YM2612 commands to it and update it to generate the actual samples. Please note the YM2612 only generates sample data, so you'll need an audio sink to actually send that data to speakers; <a href="http://github.com/grantgalitz/XAudioJS">XAudioJS</a> by <a href="https://github.com/grantgalitz" class="user-mention">@grantgalitz</a> is an excellent cross-browser solution.</p>
+
+<h3>Authors and Contributors</h3>
+
+<p>ym2612.js was written by Alex Rosario, ported from code found in <a href="http://code.google.com/p/genplus-gx">Genesis Plus GX</a>.</p>
+
+<h3>License</h3>
+
+<p>ym2612.js is available under an MIT license and no warranty is expressed, implied, or otherwise provided by Alex Rosario; please only use it for good and not for evil, thanks.</p>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/apollolux">apollolux</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><!--<![endif]-->
+    
+  </body>
+</html>
