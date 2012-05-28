@@ -74,3 +74,7 @@ Once you've written your data to the chip and your app wants to advance, get the
 # Disclaimer
 
 [Genesis Plus](http://code.google.com/p/genplus-gx) is an open-source multi-platform emulator of the Sega Genesis/Mega Drive. I very much enjoy Genesis games and am a big fan of the audio output by the console, as well as FM synthesis in general, hence this project. The ultimate goal of this project is to create a usable YM2612 VST instrument for DAWs that support the VST format, as well as an Audio Unit for those OS X-based DAWs that support CoreAudio.
+
+# License
+
+ym2612.js is provided under an MIT license.
