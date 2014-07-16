@@ -447,6 +447,7 @@ function FM_CH() {
 	this.fc = 0;	// UINT32	fnum,blk adjusted to sample rate
 	this.kcode = 0;	// UINT8	key code
 	this.block_fnum = 0;	// UINT32	current blk/fnum value for this slot
+	this.fn_h = 0;	// replaces FM_ST.fn_h
 	this.out = 0;	// replaces out_fm[ch]
 	this.canCSM = 0;	// replaces hardcoded check against CH3
 	this.canDAC = 0;	// replaces hardcoded check against CH6
@@ -461,7 +462,7 @@ function FM_ST(c, r) {
 	this.address = 0;	// UINT16	address register
 	this.status = 0;	// UINT8	status flag
 	this.mode = 0;	// UINT32	CSM/3SLOT mode
-	this.fn_h = 0;	// UINT8	freq latch
+	//this.fn_h = 0;	// UINT8	freq latch
 	this.TA = 0;	// INT32	timer a value
 	this.TAL = 0;	// INT32	timer a base
 	this.TAC = 0;	// INT32	timer a counter
@@ -1184,8 +1185,10 @@ OPN.WriteReg = function(x,r,v) {
 			var fn, blk;
 			switch (sl) {
 				case 0:	/* 0xa0-0xa2 : FNUM1 */
-					fn = ((x.OPN.ST.fn_h&7)<<8)+v;
-					blk = (x.OPN.ST.fn_h>>3)&0xff;
+					//fn = ((x.OPN.ST.fn_h&7)<<8)+v;	// old
+					//blk = (x.OPN.ST.fn_h>>3)&0xff;	// old
+					fn = ((x.CH[c].fn_h&7)<<8)+v;
+					blk = (x.CH[c].fn_h>>3)&0xff;
 					x.CH[c].kcode = (blk<<2)|OPN.fktable[fn>>7];	/* keyscale code */
 					/* phase increment counter */
 					x.CH[c].fc = (fn<<6)>>(7-blk);	// gpgx
@@ -1195,7 +1198,8 @@ OPN.WriteReg = function(x,r,v) {
 					if (cfg.debug>2) console.log('block_fnum=x',x.CH[c].block_fnum.toString(16),' kcode=',x.CH[c].kcode.toString(16),' fc=',x.CH[c].fc.toString(16));
 					break;
 				case 1:	/* 0xa4-0xa6 : FNUM2,BLK */
-					x.OPN.ST.fn_h = (v&0x3f)|0;
+					//x.OPN.ST.fn_h = (v&0x3f)|0;	// old
+					x.CH[c].fn_h = (v&0x3f)|0;
 					break;
 				case 2:	/* 0xa8-0xaa : 3CH FNUM1 */
 					if (r<0x100) {
@@ -1356,6 +1360,7 @@ Y.prototype.init = function(clock,rate) {
 Y.prototype.reset = function() {
 	if (cfg.debug) console.log("OPN::reset");
 	(function(x){
+		var i;
 		OPN.SetPrescaler(x, 144);	/* chip is running a VCLK / 144 = MCLK / 7 / 144 */
 		x.OPN.eg.timer = 0;
 		x.OPN.eg.cnt = 0;
@@ -1375,7 +1380,8 @@ Y.prototype.reset = function() {
 		x.OPN.ST.TA = 0;
 		x.OPN.ST.TAL = 1024;
 		reset_channels(x, 6);
-		var i = 0xb6; while (i>=0xb4) {
+		//for (i=0; i<6; ++i) {if (i!=0) x.CH[i].muted = 1;}
+		i = 0xb6; while (i>=0xb4) {
 			if ((i&3)!==3)
 				OPN.WriteReg(x, i, 0xc0),
 				OPN.WriteReg(x, i|0x100, 0xc0);
@@ -1412,7 +1418,7 @@ Y.prototype.write = function(a,v) {
 							this.chip.dacout = ((v-0x80)|0)<<6;	/* convert to 14-bit output */
 							break;
 						case 0x2b:	/* DAC Sel  (ym2612) */
-							this.chip.dacen = (v&0x80);	/* b7 = dac enable */
+							this.chip.dacen = !!(v&0x80);	/* b7 = dac enable */
 							break;
 						default:	/* OPN section */
 							OPN.WriteMode(this.chip, addr, v);	/* write register */
@@ -1449,19 +1455,19 @@ Y.prototype.update = function(len) {
 		}
 	}
 	//var msg = [];
-	var z = 1*this.chip.OPN.ST.scale, q = (len*z+0.5)|0;//(len*this.chip.OPN.ST.scale+0.5)|0;	// len;
+	//var z = 1.0*this.chip.OPN.ST.scale, q = (len*z+0.5)|0;//(len*this.chip.OPN.ST.scale+0.5)|0;	// len;
 	cfg.debugArr.length = 0;
 	/* buffering */
-	i = -1; while (++i<q) {
+	i = -1; while (++i<len) {
 		lt = 0, rt = 0; dis_csm = !!(this.chip.OPN.SL3.key_csm&2);
 		j = this.chip.CH.length; while (--j>-1) {
 			//if (j===0&&i<10) cfg.maxcalc = 10;
 			//else cfg.maxcalc = 0;
 			this.chip.CH[j].out = 0;	/* clear outputs */
 			this.chip.CH[j].update_ssg_eg();	/* update SSG-EG output */
-			if (!this.chip.dacen) this.chip.CH[j].calculate(this.chip);	/* calculate FM */
-			else if (this.chip.CH[j].canDAC) this.chip.CH[j].out = this.chip.dacout;	/* DAC Mode */
-			if (j===0&&cfg.debugLocal) cfg.debugArr[cfg.debugArr.length] = this.chip.CH[j].out;
+			if (this.chip.dacen&&this.chip.CH[j].canDAC) this.chip.CH[j].out += this.chip.dacout;	/* DAC Mode */
+			else this.chip.CH[j].calculate(this.chip);	/* calculate FM */
+			if (j===0&&(--cfg.debugLocal>0)) cfg.debugArr[cfg.debugArr.length] = this.chip.CH[j].out;
 			/* 14-bit accumulator channels outputs (range is -8192;+8192) */
 			if (this.chip.CH[j].out>8192) this.chip.CH[j].out = 8192;
 			else if (this.chip.CH[j].out<-8192) this.chip.CH[j].out = -8192;
@@ -1469,8 +1475,9 @@ Y.prototype.update = function(len) {
 			//if (j===0) msg[i] = (this.chip.CH[j].out&this.chip.OPN.pan[(j<<1)+0]);
 			//lt += this.chip.CH[j].out&this.chip.OPN.pan[(j<<1)+0];	// old method
 			//rt += this.chip.CH[j].out&this.chip.OPN.pan[(j<<1)+1];	// old method
-			lt += this.chip.CH[j].out&this.chip.CH[j].pan[0];	// new method
-			rt += this.chip.CH[j].out&this.chip.CH[j].pan[1];	// new method
+			if (!this.chip.CH[j].muted)	// new method
+				lt += (this.chip.CH[j].out&this.chip.CH[j].pan[0])|0,
+				rt += (this.chip.CH[j].out&this.chip.CH[j].pan[1])|0;
 			if (dis_csm&&this.chip.CH[j].canCSM) {	/* CSM Mode Key ON still disabled */
 				/* CSM Mode Key OFF (verified by Nemesis on real hardware) */
 				this.chip.CH[j].keyOffCSM(this.chip, _SLOT[0]);
@@ -1509,18 +1516,18 @@ Y.prototype.update = function(len) {
 	//// post-update adjustments +neo
 	//this.count += num;
 	//var time = this.start;	/* FM frame initial timestamp */
-	var out = [[],[]];
-	i = 0; j = 0;
-	do {
-		out[0][i] = buf[0][j|0];	/* left channel */
-		out[1][i] = buf[1][j|0];	/* right channel */
-		j += (z), ++i;
+	//var out = [[],[]];
+	//i = 0; j = 0;
+	//do {
+	//	out[0][i] = buf[0][j|0];	/* left channel */
+	//	out[1][i] = buf[1][j|0];	/* right channel */
+	//	j += (z), ++i;
 		//time += this.ratio, ++i;	/* increment time counter */
-	} while (i<len);
+	//} while (i<len);
 	//this.count = time-num, this.start = time-num;
 	//this.count = this.start = this.count-num;
 	if (cfg.debugLocal) console.log(cfg.debugArr.join(", "));
-	return out;
+	return buf;
 };
 /* DAC precision (normally 9-bit on real hardware, implemented through simple 14-bit channel output bitmasking) */
 Y.prototype.config = function(bits) {
