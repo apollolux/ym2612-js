@@ -1467,7 +1467,7 @@ Y.prototype.update = function(len) {
 			this.chip.CH[j].update_ssg_eg();	/* update SSG-EG output */
 			if (this.chip.dacen&&this.chip.CH[j].canDAC) this.chip.CH[j].out += this.chip.dacout;	/* DAC Mode */
 			else this.chip.CH[j].calculate(this.chip);	/* calculate FM */
-			if (j===0&&(--cfg.debugLocal>0)) cfg.debugArr[cfg.debugArr.length] = this.chip.CH[j].out;
+			if ((cfg.debugLocal>0)&&j===0) cfg.debugArr[cfg.debugArr.length] = this.chip.CH[j].out, --cfg.debugLocal;
 			/* 14-bit accumulator channels outputs (range is -8192;+8192) */
 			if (this.chip.CH[j].out>8192) this.chip.CH[j].out = 8192;
 			else if (this.chip.CH[j].out<-8192) this.chip.CH[j].out = -8192;
